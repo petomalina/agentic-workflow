@@ -26,7 +26,7 @@ app/                  # Braindump app (Vite + React + shadcn/ui + Drizzle + Jest
   src/components/      # surfaces: chat-window, people-directory, timeline, follow-ups, person-detail
   src/lib/mock-data.ts # the app runs on MOCK data for now
   src/db/              # Drizzle schema + connection — SCAFFOLDING, not wired to the UI yet
-  src/agent/           # LLM judge (Vertex) + conversation eval fixtures harness
+  src/agent/           # conversation eval harness: agent slot (stub) + Vertex LLM judge
   drizzle/             # generated migrations (after db:generate)
 conversations/        # agent eval fixtures: one JSON per scenario, each with the
                       # expected user/agent transcript AND expected final DB state
@@ -108,18 +108,14 @@ multi-attendee meetings.
 
 The harness lives in `app/src/agent/`:
 - `config.ts` — model + deterministic settings (Vertex `gemini-3.5-flash`, temp 0, thinking 0).
-- `judge.ts` — the **LLM-as-judge** (Gemini 3.5 Flash via Vertex AI); the full conversation + expected + actual are always sent to it (the dataset is small, so no trimming).
-- `conversations.test.ts` — validates every fixture's shape on every `npm test`.
-- `judge.test.ts` — validates the judge itself against known-good/known-bad data: correct passes (true positive, no false negative) and wrong fails (no false positive).
+- `run-conversation.ts` — the **agent slot**: drop a fresh DB, replay a fixture's user turns through the agent, return the transcript + DB snapshot. **A stub for now** (throws), so the conversation evals are RED until the Genkit + Vertex agent is built.
+- `judge.ts` — the **LLM-as-judge** (Gemini 3.5 Flash via Vertex AI). One verdict per conversation: the expected + actual conversation, the expected + actual DB, and every assertion are dumped in; it returns pass/fail. No hand-written field comparisons.
+- `conversations.test.ts` — checks each fixture's shape, then the eval: per fixture, `judge(fixture, await runConversation(fixture))` → green/red.
 
-There is **no braindump agent yet**. When one exists, add a runner that replays a
-fixture's user turns against a fresh DB and feed its transcript + DB snapshot to
-`judge`.
-
-`judge` is implemented with Genkit + Vertex AI, so the judge eval needs the
-preconfigured Vertex project (ADC; the model is served from the
-`GOOGLE_CLOUD_LOCATION` — `global` here). It is opt-in: run `npm run test:evals`,
-or `RUN_AGENT_EVALS=1 npx jest src/agent/judge.test.ts --forceExit`. (`--forceExit`
-because Genkit's tracing keeps the process open; the judge test uses the `node`
-Jest environment so Genkit's deps resolve to their CommonJS builds.) Fixture-shape
-validation runs on every `npm test`.
+Each conversation eval is a single assertion and runs on `npm test`. They are
+**red** until the agent exists (the stub throws before the model is ever called).
+Once the agent runs for real it calls Gemini, so the evals then need the
+preconfigured Vertex project (ADC; model on `GOOGLE_CLOUD_LOCATION`, `global`
+here) and `jest --forceExit` (Genkit's tracing keeps the process open). The eval
+file uses the `node` Jest environment so Genkit's deps resolve to their CommonJS
+builds.

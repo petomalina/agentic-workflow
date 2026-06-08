@@ -10,7 +10,6 @@
     "lint": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:evals": "RUN_AGENT_EVALS=1 jest --forceExit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
