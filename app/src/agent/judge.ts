@@ -8,7 +8,7 @@ export interface JudgeInput {
   fixture: ConversationFixture
   /** Expected artifact: `fixture.turns` for "conversation", `fixture.expectedDb` for "db". */
   expected: unknown
-  /** Actual artifact produced by `runConversation` (the transcript or the DB snapshot). */
+  /** Actual artifact to grade (a transcript, or a DB snapshot). */
   actual: unknown
 }
 

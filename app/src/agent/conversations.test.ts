@@ -1,11 +1,6 @@
-/**
- * @jest-environment node
- */
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-import { judge } from "@/agent/judge"
-import { runConversation } from "@/agent/run-conversation"
 import type { ConversationFixture } from "@/agent/types"
 
 // Conversation fixtures live at the repo root: app/src/agent -> ../../../conversations
@@ -26,10 +21,8 @@ function loadFixtures(): ConversationFixture[] {
 
 const fixtures = loadFixtures()
 
-// Agent + judge calls are slow (several sequential Gemini round-trips per turn).
-jest.setTimeout(180_000)
-
-// Always-on, no model calls: the fixtures themselves must be valid and complete.
+// The fixtures must be valid and complete. (The agent that would replay these
+// conversations does not exist yet; the judge is exercised by judge.test.ts.)
 describe("conversation fixtures", () => {
   it("loads at least one fixture", () => {
     expect(fixtures.length).toBeGreaterThan(0)
@@ -49,52 +42,4 @@ describe("conversation fixtures", () => {
       ).toBeGreaterThan(0)
     })
   })
-})
-
-/**
- * LLM-judged evals. These run the agent and call Gemini 3.5 Flash as a judge, so
- * they are opt-in and require the agent to be implemented. Enable with
- * `RUN_AGENT_EVALS=1`. Target a single case by id, e.g.
- *   RUN_AGENT_EVALS=1 npx jest -t "04-person-merge"
- */
-const runEvals = process.env.RUN_AGENT_EVALS === "1"
-const evalSuite = runEvals ? describe : describe.skip
-
-evalSuite("conversation evals (judged by Gemini 3.5 Flash)", () => {
-  for (const fixture of fixtures) {
-    describe(`${fixture.id} — ${fixture.title}`, () => {
-      let run: Awaited<ReturnType<typeof runConversation>>
-
-      beforeAll(async () => {
-        // Replay the conversation through the agent against a fresh DB.
-        run = await runConversation(fixture)
-      })
-
-      it("conversation matches expectations", async () => {
-        const verdict = await judge({
-          kind: "conversation",
-          fixture,
-          expected: fixture.turns,
-          actual: run.transcript,
-        })
-        if (!verdict.pass) {
-          throw new Error(`[${fixture.id}] conversation: ${verdict.reason}`)
-        }
-        expect(verdict.pass).toBe(true)
-      })
-
-      it("database matches expectations", async () => {
-        const verdict = await judge({
-          kind: "db",
-          fixture,
-          expected: fixture.expectedDb,
-          actual: run.db,
-        })
-        if (!verdict.pass) {
-          throw new Error(`[${fixture.id}] db: ${verdict.reason}`)
-        }
-        expect(verdict.pass).toBe(true)
-      })
-    })
-  }
 })
