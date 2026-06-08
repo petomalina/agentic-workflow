@@ -75,3 +75,16 @@ When running **both** dev servers at once, give them different ports
 - The agent is meant to be LLM-based and tool-using: parse a braindump → extract
   people/events/attendees/labels → ask clarifying questions to enrich rapport →
   write via DB tools → answer recall by querying.
+
+## Agent tech stack
+
+The braindump agent (not yet wired up — UI runs on mock data) is built with:
+
+- **Google Genkit** — agent/flow framework and tool calling.
+- **Gemini 3.5 Flash** — the model.
+- **temperature: `0`** and **thinking budget: `0`** — extraction and recall must
+  be deterministic and fast, not exploratory.
+
+Tools the agent uses are the Drizzle/SQLite operations over `src/db/schema.ts`
+(create/update people, events, attendees, labels, relationships, follow-ups;
+query for recall).
