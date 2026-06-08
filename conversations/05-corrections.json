@@ -1,0 +1,46 @@
+{
+  "id": "05-corrections",
+  "title": "Corrections and re-attribution",
+  "scenario": "standup",
+  "description": "User corrects who said what (re-attribution) and then corrects a fact. The agent must update existing records rather than append contradictory duplicates.",
+  "now": "2026-06-09T11:00:00",
+  "turns": [
+    { "role": "user", "content": "From today's platform standup: Nadia said the migration is blocked on the schema change." },
+    { "role": "assistant", "content": "Logged: Nadia flagged the migration is blocked on the schema change (today's platform standup). Anything else?" },
+    { "role": "user", "content": "Actually it was Omar who said that, not Nadia. Nadia was talking about API rate limits." },
+    { "role": "assistant", "content": "Corrected: Omar said the migration is blocked on the schema change; Nadia raised API rate limits. Re-attributed both." },
+    { "role": "user", "content": "And it's not blocked — it's just delayed by a week." },
+    { "role": "assistant", "content": "Updated: the migration is delayed by a week (not blocked), per Omar. Done." }
+  ],
+  "expectedDb": {
+    "people": [
+      { "name": "Omar", "labels": [], "notes": "Platform team; said the migration is delayed by a week (corrected from 'blocked') on the schema change." },
+      { "name": "Nadia", "labels": [], "notes": "Platform team; raised API rate limits. The migration comment was re-attributed away from her to Omar." }
+    ],
+    "events": [
+      {
+        "title": "Platform standup",
+        "context": "platform standup",
+        "occurredAt": "2026-06-09",
+        "occurredAtResolvedFrom": "\"today\"",
+        "attendees": ["Omar", "Nadia"],
+        "notes": "Omar: migration delayed a week (NOT blocked) on the schema change. Nadia: API rate limits."
+      }
+    ],
+    "relationships": [],
+    "followUps": []
+  },
+  "assertions": {
+    "conversation": [
+      "The agent re-attributes the migration comment from Nadia to Omar after the correction.",
+      "The agent changes 'blocked' to 'delayed by a week' rather than keeping both contradictory facts."
+    ],
+    "db": [
+      "Two people: Omar and Nadia.",
+      "The migration fact is attributed to Omar and reads 'delayed a week', NOT 'blocked'.",
+      "Nadia is associated with API rate limits, not the migration block.",
+      "One standup event dated today (2026-06-09) with both people."
+    ]
+  },
+  "edgeCases": ["correction-reattribution", "correction-fact-update", "multiple-people", "relative-dates"]
+}

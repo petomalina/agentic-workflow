@@ -1,0 +1,49 @@
+{
+  "id": "07-multi-person-meeting",
+  "title": "One meeting, several people",
+  "scenario": "client-kickoff",
+  "description": "A single meeting with multiple distinct attendees from the same company. Tests one shared event with several attendees, distinct people, group coworker relationships, and a 'primary contact' note.",
+  "now": "2026-06-09T08:30:00",
+  "turns": [
+    { "role": "user", "content": "Yesterday's client kickoff with Acme — three people on their side: Bill Tan (CTO), Grace Owusu (eng lead), and Hiro Tanaka (PM). We scoped the integration." },
+    { "role": "assistant", "content": "Logged a client kickoff with Acme (yesterday, Jun 8) — attendees Bill Tan (CTO), Grace Owusu (eng lead), and Hiro Tanaka (PM), topic: integration scoping. One event, three people. Anything to flag?" },
+    { "role": "user", "content": "Hiro's the main point of contact. And Bill, Grace, and Hiro are all coworkers at Acme." },
+    { "role": "assistant", "content": "Marked Hiro Tanaka as the primary contact and linked Bill, Grace, and Hiro as Acme coworkers. Saved." }
+  ],
+  "expectedDb": {
+    "people": [
+      { "name": "Bill Tan", "description": "CTO at Acme.", "labels": [], "notes": "Met at the Acme client kickoff." },
+      { "name": "Grace Owusu", "description": "Engineering lead at Acme.", "labels": [], "notes": "Met at the Acme client kickoff." },
+      { "name": "Hiro Tanaka", "description": "PM at Acme; primary point of contact.", "labels": [], "notes": "Primary contact for the Acme account." }
+    ],
+    "events": [
+      {
+        "title": "Acme client kickoff",
+        "context": "Acme",
+        "occurredAt": "2026-06-08",
+        "occurredAtResolvedFrom": "\"yesterday\"",
+        "attendees": ["Bill Tan", "Grace Owusu", "Hiro Tanaka"],
+        "notes": "Scoped the integration. One event with three attendees, not three separate meetings."
+      }
+    ],
+    "relationships": [
+      { "people": ["Bill Tan", "Grace Owusu"], "type": "coworker", "note": "Both at Acme." },
+      { "people": ["Bill Tan", "Hiro Tanaka"], "type": "coworker", "note": "Both at Acme." },
+      { "people": ["Grace Owusu", "Hiro Tanaka"], "type": "coworker", "note": "Both at Acme." }
+    ],
+    "followUps": []
+  },
+  "assertions": {
+    "conversation": [
+      "The agent creates ONE event with three attendees, not three separate meetings.",
+      "The agent records Hiro as the primary contact."
+    ],
+    "db": [
+      "Three distinct people, all noted as being at Acme.",
+      "Exactly one event (Acme client kickoff) dated 2026-06-08 with all three as attendees.",
+      "The three are connected as coworkers (pairwise links, or an equivalent 'all coworkers at Acme' representation).",
+      "Hiro Tanaka is flagged as the primary contact."
+    ]
+  },
+  "edgeCases": ["multi-attendee-event", "multiple-people", "group-coworkers", "primary-contact", "relative-dates"]
+}

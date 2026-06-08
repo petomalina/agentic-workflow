@@ -1,0 +1,38 @@
+{
+  "id": "03-relative-dates",
+  "title": "Relative time resolution",
+  "scenario": "catch-up",
+  "description": "User dumps several interactions using only relative time expressions. Tests that the agent anchors each on 'now' and resolves it to a concrete date.",
+  "now": "2026-06-09T09:00:00",
+  "turns": [
+    { "role": "user", "content": "Catching up on notes. Yesterday I had lunch with Sofia Reyes. This morning I called Dan Park. And about two weeks ago I met Aisha Khan at a workshop." },
+    { "role": "assistant", "content": "Logged three: lunch with Sofia Reyes (yesterday, Jun 8), a call with Dan Park (this morning, Jun 9), and meeting Aisha Khan at a workshop (~two weeks ago, around May 26). Want to add detail to any?" },
+    { "role": "user", "content": "Just note that Aisha's workshop was about design systems." },
+    { "role": "assistant", "content": "Added 'design systems' to the Aisha Khan workshop. Done." }
+  ],
+  "expectedDb": {
+    "people": [
+      { "name": "Sofia Reyes", "labels": [], "notes": "Lunch yesterday." },
+      { "name": "Dan Park", "labels": [], "notes": "Phone call this morning." },
+      { "name": "Aisha Khan", "labels": [], "notes": "Met at a design-systems workshop about two weeks ago." }
+    ],
+    "events": [
+      { "title": "Lunch with Sofia Reyes", "occurredAt": "2026-06-08", "occurredAtResolvedFrom": "\"yesterday\"", "attendees": ["Sofia Reyes"] },
+      { "title": "Call with Dan Park", "occurredAt": "2026-06-09", "occurredAtResolvedFrom": "\"this morning\" -> today", "attendees": ["Dan Park"] },
+      { "title": "Design systems workshop", "context": "workshop", "occurredAt": "2026-05-26", "occurredAtResolvedFrom": "\"about two weeks ago\" (approximate)", "attendees": ["Aisha Khan"], "notes": "Design systems." }
+    ],
+    "relationships": [],
+    "followUps": []
+  },
+  "assertions": {
+    "conversation": [
+      "The agent resolves each relative time to a concrete date in its reply.",
+      "'about two weeks ago' is approximate; any date within a few days of 2026-05-26 is acceptable."
+    ],
+    "db": [
+      "Three people and three events.",
+      "Dates: yesterday = 2026-06-08, this morning/today = 2026-06-09, ~two weeks ago is approximately 2026-05-26."
+    ]
+  },
+  "edgeCases": ["relative-dates", "approximate-dates", "multiple-people"]
+}

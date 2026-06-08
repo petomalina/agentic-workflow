@@ -1,0 +1,47 @@
+{
+  "id": "04-person-merge",
+  "title": "Same person across turns is merged",
+  "scenario": "one-off",
+  "description": "A person is first mentioned by first name only, then later by full name. The agent must treat them as one person and enrich the same record instead of creating a duplicate.",
+  "now": "2026-06-09T10:00:00",
+  "turns": [
+    { "role": "user", "content": "Met someone named Jordan at the AI dinner last night — didn't catch a last name." },
+    { "role": "assistant", "content": "Logged Jordan from last night's AI dinner (Jun 8). Let me know if you get a full name." },
+    { "role": "user", "content": "Got it — Jordan Lee, she's a founder. Same Jordan from the dinner." },
+    { "role": "assistant", "content": "Updated the same record to Jordan Lee (founder) — kept as one person, not a duplicate." },
+    { "role": "user", "content": "Add that she's raising a seed round." },
+    { "role": "assistant", "content": "Noted 'raising a seed round' on Jordan Lee. Done." }
+  ],
+  "expectedDb": {
+    "people": [
+      {
+        "name": "Jordan Lee",
+        "description": "Founder, raising a seed round.",
+        "labels": [],
+        "notes": "First mentioned as 'Jordan' (no last name), then 'Jordan Lee' — the same person. Met at the AI dinner."
+      }
+    ],
+    "events": [
+      {
+        "title": "AI dinner",
+        "context": "AI dinner",
+        "occurredAt": "2026-06-08",
+        "occurredAtResolvedFrom": "\"last night\" -> yesterday",
+        "attendees": ["Jordan Lee"]
+      }
+    ],
+    "relationships": [],
+    "followUps": []
+  },
+  "assertions": {
+    "conversation": [
+      "After the full name is given, the agent explicitly keeps it as one record and does not create a second person."
+    ],
+    "db": [
+      "Exactly ONE person — Jordan Lee — not two (there is no separate 'Jordan' record).",
+      "That single person carries both facts: founder, raising a seed round.",
+      "One event (AI dinner) dated 2026-06-08 with Jordan Lee as attendee."
+    ]
+  },
+  "edgeCases": ["person-merge", "partial-then-full-name", "relative-dates"]
+}

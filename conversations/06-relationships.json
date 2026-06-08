@@ -1,0 +1,50 @@
+{
+  "id": "06-relationships",
+  "title": "People-to-people relationships",
+  "scenario": "intros",
+  "description": "User records relationships between people: a directional manager/report link and a 'went to school together' link, plus an introduction and a person added after the fact.",
+  "now": "2026-06-09T16:00:00",
+  "turns": [
+    { "role": "user", "content": "Two intros to record: Maya Chen introduced me to her manager, Ravi Iyer, at the Stripe office yesterday. Maya reports to Ravi." },
+    { "role": "assistant", "content": "Logged Maya Chen and Ravi Iyer (met yesterday at the Stripe office) and linked them: Maya reports to Ravi (he's her manager). What did you discuss?" },
+    { "role": "user", "content": "Payments infra. Also Ravi and my old colleague Sam Diallo went to school together, apparently." },
+    { "role": "assistant", "content": "Noted payments infra. Added a relationship: Ravi Iyer and Sam Diallo know each other from school. Want me to add Sam as a person too?" },
+    { "role": "user", "content": "Yeah add Sam — he's at Adyen now." },
+    { "role": "assistant", "content": "Added Sam Diallo (Adyen). Saved all three people and both relationships." }
+  ],
+  "expectedDb": {
+    "people": [
+      { "name": "Maya Chen", "labels": [], "notes": "Met at the Stripe office yesterday; reports to Ravi Iyer; discussed payments infra." },
+      { "name": "Ravi Iyer", "labels": [], "notes": "Maya Chen's manager; met at the Stripe office yesterday; went to school with Sam Diallo." },
+      { "name": "Sam Diallo", "description": "At Adyen.", "labels": [], "notes": "Old colleague; went to school with Ravi Iyer; added after the fact, not part of the meeting." }
+    ],
+    "events": [
+      {
+        "title": "Stripe office visit",
+        "context": "Stripe office",
+        "occurredAt": "2026-06-08",
+        "occurredAtResolvedFrom": "\"yesterday\"",
+        "attendees": ["Maya Chen", "Ravi Iyer"],
+        "notes": "Payments infra."
+      }
+    ],
+    "relationships": [
+      { "people": ["Maya Chen", "Ravi Iyer"], "type": "manager", "note": "Maya reports to Ravi (Ravi is the manager) — direction matters." },
+      { "people": ["Ravi Iyer", "Sam Diallo"], "type": "went to school together" }
+    ],
+    "followUps": []
+  },
+  "assertions": {
+    "conversation": [
+      "The agent records the directional manager relationship (Maya reports to Ravi, not the reverse).",
+      "The agent offers to add Sam Diallo as a person before assuming it."
+    ],
+    "db": [
+      "Three people: Maya Chen, Ravi Iyer, Sam Diallo.",
+      "Two relationships: Maya-Ravi (manager/report, direction noted) and Ravi-Sam (school).",
+      "Sam is NOT an attendee of the Stripe office event (he was only referenced).",
+      "One event (Stripe office visit) dated 2026-06-08 with Maya and Ravi as attendees."
+    ]
+  },
+  "edgeCases": ["relationships", "directional-relationship", "introduction", "person-added-later", "relative-dates"]
+}

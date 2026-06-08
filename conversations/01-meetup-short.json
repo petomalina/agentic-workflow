@@ -1,0 +1,48 @@
+{
+  "id": "01-meetup-short",
+  "title": "Short meetup dump",
+  "scenario": "meetup",
+  "description": "A quick single-person braindump from an evening meetup. Baseline case: one person, one event, relative time 'tonight' = today, and the agent must NOT invent a follow-up the user declined.",
+  "now": "2026-06-09T21:30:00",
+  "turns": [
+    { "role": "user", "content": "Quick dump from the React meetup tonight — met Priya Nair, a staff engineer at Brightloom. We talked about their move to local-first sync." },
+    { "role": "assistant", "content": "Logged Priya Nair (staff engineer at Brightloom) from tonight's React meetup, topic local-first sync. Want me to note a challenge she's working on or a follow-up?" },
+    { "role": "user", "content": "She's wrestling with offline conflict resolution. No follow-up for now." },
+    { "role": "assistant", "content": "Noted the offline conflict-resolution challenge against Priya Nair. Anything else?" },
+    { "role": "user", "content": "That's it." },
+    { "role": "assistant", "content": "Done — saved Priya and the meetup." }
+  ],
+  "expectedDb": {
+    "people": [
+      {
+        "name": "Priya Nair",
+        "description": "Staff engineer at Brightloom; working on offline conflict resolution.",
+        "labels": [],
+        "notes": "Met at React meetup; interested in local-first sync."
+      }
+    ],
+    "events": [
+      {
+        "title": "React meetup",
+        "context": "React meetup",
+        "occurredAt": "2026-06-09",
+        "occurredAtResolvedFrom": "\"tonight\" -> today (now is 2026-06-09)",
+        "attendees": ["Priya Nair"],
+        "notes": "Discussed local-first sync; her challenge is offline conflict resolution."
+      }
+    ],
+    "relationships": [],
+    "followUps": []
+  },
+  "assertions": {
+    "conversation": [
+      "The agent acknowledges the captured person and event and asks at least one clarifying question.",
+      "The agent does NOT create a follow-up after the user says 'no follow-up for now'."
+    ],
+    "db": [
+      "Exactly one person (Priya Nair) and one event (the React meetup, dated today 2026-06-09).",
+      "No follow-ups and no relationships are created."
+    ]
+  },
+  "edgeCases": ["relative-dates", "single-person", "no-invented-followup"]
+}

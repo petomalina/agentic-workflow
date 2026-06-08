@@ -1,0 +1,97 @@
+{
+  "id": "02-conference-long",
+  "title": "Long conference dump with additions and a correction",
+  "scenario": "conference",
+  "description": "Multi-turn conference recap. Exercises: relative dates (last Thursday/Friday, end of next week), the same person referenced across several turns (must stay one record), a multi-attendee event, a coworker relationship, a name correction (Theo -> Teo), explicit labels, and a follow-up.",
+  "now": "2026-06-09T09:00:00",
+  "turns": [
+    { "role": "user", "content": "Big dump from ShipConf last Thursday and Friday. Met Marcus Webb, a PM at Finch — we talked about onboarding activation metrics." },
+    { "role": "assistant", "content": "Logged Marcus Webb (PM at Finch) from ShipConf, topic onboarding activation metrics. Was that the Thursday or Friday session?" },
+    { "role": "user", "content": "Thursday. I also met Lena Ortiz there — she runs growth at Finch too, so she and Marcus are coworkers." },
+    { "role": "assistant", "content": "Added Lena Ortiz (growth at Finch) and linked her with Marcus Webb as coworkers. What did you and Lena discuss?" },
+    { "role": "user", "content": "Retention experiments. Then on Friday I sat in on a roundtable with Marcus, Lena, and a designer, Theo Kowalski, about activation." },
+    { "role": "assistant", "content": "Created a Friday roundtable at ShipConf with Marcus Webb, Lena Ortiz, and Theo Kowalski, topic activation. Anything about Theo?" },
+    { "role": "user", "content": "He's a freelance product designer. Actually his name is Teo — one e, not Theo." },
+    { "role": "assistant", "content": "Fixed his name to Teo Kowalski (freelance product designer) and kept him on the Friday roundtable — same person, no duplicate." },
+    { "role": "user", "content": "I promised Marcus I'd send him our activation dashboard by end of next week." },
+    { "role": "assistant", "content": "Added a follow-up: you owe Marcus Webb the activation dashboard, due end of next week (Fri Jun 19). Want any tags?" },
+    { "role": "user", "content": "Tag Marcus and Lena 'finch', and Marcus 'pm'. That's everything." },
+    { "role": "assistant", "content": "Tagged Marcus Webb and Lena Ortiz 'finch', and Marcus 'pm'. All saved." }
+  ],
+  "expectedDb": {
+    "people": [
+      {
+        "name": "Marcus Webb",
+        "description": "PM at Finch.",
+        "labels": ["finch", "pm"],
+        "notes": "Met at ShipConf (Thursday); discussed onboarding activation metrics; attended the Friday activation roundtable. Mentioned across several turns -> ONE record."
+      },
+      {
+        "name": "Lena Ortiz",
+        "description": "Runs growth at Finch.",
+        "labels": ["finch"],
+        "notes": "Met at ShipConf; discussed retention experiments; attended the Friday activation roundtable."
+      },
+      {
+        "name": "Teo Kowalski",
+        "description": "Freelance product designer.",
+        "labels": [],
+        "notes": "Corrected from 'Theo' to 'Teo'; attended the Friday activation roundtable. No 'Theo' duplicate should remain."
+      }
+    ],
+    "events": [
+      {
+        "title": "ShipConf - met Marcus Webb",
+        "context": "ShipConf",
+        "occurredAt": "2026-06-04",
+        "occurredAtResolvedFrom": "\"last Thursday\" (now is Tue 2026-06-09)",
+        "attendees": ["Marcus Webb"],
+        "notes": "Onboarding activation metrics."
+      },
+      {
+        "title": "ShipConf - met Lena Ortiz",
+        "context": "ShipConf",
+        "occurredAt": "2026-06-04",
+        "occurredAtResolvedFrom": "Met 'there' in the Thursday context; exact day for Lena is approximate.",
+        "attendees": ["Lena Ortiz"],
+        "notes": "Retention experiments."
+      },
+      {
+        "title": "Activation roundtable",
+        "context": "ShipConf",
+        "occurredAt": "2026-06-05",
+        "occurredAtResolvedFrom": "\"Friday\" -> last Friday 2026-06-05",
+        "attendees": ["Marcus Webb", "Lena Ortiz", "Teo Kowalski"],
+        "notes": "Topic: activation. One shared event with three attendees."
+      }
+    ],
+    "relationships": [
+      { "people": ["Marcus Webb", "Lena Ortiz"], "type": "coworker", "note": "Both at Finch." }
+    ],
+    "followUps": [
+      {
+        "summary": "Send Marcus Webb the activation dashboard",
+        "owner": "you",
+        "due": "2026-06-19",
+        "dueResolvedFrom": "\"end of next week\" -> Fri 2026-06-19",
+        "done": false
+      }
+    ]
+  },
+  "assertions": {
+    "conversation": [
+      "When the day is ambiguous, the agent asks which day (Thursday vs Friday) rather than guessing.",
+      "After the correction, the agent updates Theo -> Teo on the SAME person and explicitly avoids creating a duplicate.",
+      "The agent confirms the follow-up with a concrete due date."
+    ],
+    "db": [
+      "Exactly three people: Marcus Webb, Lena Ortiz, Teo Kowalski. No 'Theo Kowalski' duplicate remains.",
+      "Marcus Webb appears once even though he is mentioned in several turns.",
+      "The Friday roundtable is a SINGLE event with all three as attendees.",
+      "Marcus and Lena are linked as coworkers.",
+      "Exactly one follow-up: owed by you to Marcus, due about 2026-06-19.",
+      "Labels: Marcus has 'finch' and 'pm'; Lena has 'finch'; Teo has none."
+    ]
+  },
+  "edgeCases": ["relative-dates", "person-merge", "multi-attendee-event", "relationship", "name-correction", "labels", "follow-up"]
+}
