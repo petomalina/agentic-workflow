@@ -2,8 +2,9 @@
 name: implement
 description: >-
   End-to-end feature implementation harness. Grounds in the product bank (bank/),
-  studies the codebase to find how to achieve the user's intent, spawns an
-  implementation agent team, drives a MANDATORY user-provided test suite to green
+  studies the codebase to find how to achieve the user's intent, VERIFIES the
+  approach against current external sources (never implements from memory), spawns
+  an implementation agent team, drives a MANDATORY user-provided test suite to green
   (each test individually, then all in parallel), then loops Claude + Codex code
   reviews with fixes until both reviewers are clean and every test passes. Use when
   the user runs /implement or asks to implement a feature/task and provides the
@@ -17,12 +18,24 @@ that drives the user-provided tests to green, wrapped by an **outer review loop*
 that runs an independent Claude review and an independent Codex review, fixes every
 finding, and repeats until both reviewers are clean and all tests still pass.
 
+> **Grounding rule — verify, never recall.** Do not implement anything from implicit
+> training-data knowledge. Every API signature, library usage, config option,
+> version-specific behavior, and "the right way to do X" claim must be **confirmed
+> against current external sources before you write or accept the code** — not from
+> memory. Per project convention: check **context7** first for library/framework
+> docs, fall back to **web search** for anything context7 doesn't cover (and as the
+> universal backstop), and run those lookups in a **sub-agent** so they don't burn
+> main-context tokens. If you can't verify a claim, treat it as unknown and either
+> search harder or surface the uncertainty — never ship an unverified assumption.
+> This rule binds every phase below and every agent you spawn.
+
 ```
 PRECONDITION: tests provided?  ── no ──▶ STOP, ask the user for tests
         │ yes
         ▼
 [1] Ground in the product bank (bank/)
-[2] Understand the codebase + how to achieve the intent
+[2] Understand the codebase + VERIFY the approach against current sources
+        (context7 → web search, via sub-agent — never from memory)
 [3] Plan the implementation
 [4] Spawn the implementation agent team ─────────────┐
         ▼                                            │
@@ -82,7 +95,7 @@ proceeding.
 
 ---
 
-## Phase 2 — Understand the codebase and how to achieve the intent
+## Phase 2 — Understand the codebase and verify the approach
 
 Figure out *how* the application is structured and *where* the change lands before
 writing any code. Use the `Explore` agent (or `general-purpose`) to fan out when the
@@ -94,8 +107,28 @@ to satisfy the intent from Phase 1. Confirm the test commands from Phase 0 actua
 run in this environment (don't start `air`/`npm run dev` yourself — per project
 convention they're already up; only restart if FE/BE is unreachable).
 
-Output of this phase: a concrete approach — which files change, what gets added, and
-how the user-provided tests will exercise it.
+**Verify the approach against current sources (mandatory, not optional).** Before
+committing to *how* you'll implement, confirm the actual current API/usage — do not
+rely on what you remember. Per the grounding rule above:
+
+1. List every external dependency the change leans on — libraries, frameworks, SDKs,
+   APIs, CLIs, config formats, protocol/schema details, version-specific behavior.
+2. For each, **look it up against live sources via a sub-agent** (so it doesn't burn
+   main context): **context7 first** for library/framework docs; **web search** for
+   anything context7 doesn't cover, for current best practices, and as the universal
+   backstop. Capture the exact signatures, options, and idioms the docs show *now* —
+   and prefer the versions actually installed in this repo (check `package.json` /
+   `go.mod`), not the latest blog post.
+3. Reconcile what you found with the codebase's existing patterns. If the verified
+   "right way" conflicts with how the repo currently does it, surface that to the user
+   rather than silently picking one.
+
+Anything you could not verify is an open question, not a default — note it and resolve
+it (search harder or ask) before it reaches the implementation team.
+
+Output of this phase: a concrete, **source-verified** approach — which files change,
+what gets added, the confirmed APIs/idioms it uses, and how the user-provided tests
+will exercise it.
 
 ---
 
@@ -118,8 +151,12 @@ delegate and walk away.
 
 - One implementer per independent workstream from Phase 3 (`subagent_type: claude` or
   `general-purpose`). Give each agent: the Phase-1 intent paragraph, the relevant
-  codebase findings, its slice of the plan, the conventions to match, and **the
-  specific tests it must make pass**.
+  codebase findings, the **source-verified API/usage notes from Phase 2**, its slice
+  of the plan, the conventions to match, and **the specific tests it must make pass**.
+- Pass the grounding rule down explicitly: each implementer must **verify any
+  unfamiliar or uncertain API/library usage against current sources (context7 →
+  web search) before writing it**, not reconstruct it from memory. If Phase 2 didn't
+  already cover something it needs, it looks it up — it does not guess.
 - For larger efforts, `TeamCreate` + `TaskCreate`/`SendMessage` can coordinate a
   persistent team; for most tasks parallel `Agent` calls are enough.
 - As workstreams complete, the main agent integrates the results into a coherent
@@ -188,9 +225,12 @@ until: BOTH Claude and Codex report nothing actionable AND all tests pass
 
 **Claude (cloud) review** — spawn via the `Agent` tool (`subagent_type: claude`).
 Give it the Phase-1 intent, the list of changed files, and the mandate to review for
-correctness bugs, security, intent-fit, and convention adherence — and to return a
-prioritized, deduplicated finding list with `file:line` references. (You may instead
-invoke the `code-review` skill if you prefer its format.)
+correctness bugs, security, intent-fit, and convention adherence — **and to flag any
+API/library usage that looks assumed-from-memory rather than verified** (wrong/stale
+signatures, deprecated options, version mismatches). It returns a prioritized,
+deduplicated finding list with `file:line` references. (You may instead invoke the
+`code-review` skill if you prefer its format.) Any such finding is fixed by
+re-verifying against current sources, not by guessing again.
 
 **Codex review** — run via Bash:
 - In a git repo: `gtimeout 600 codex exec review --uncommitted` (or
@@ -235,6 +275,9 @@ deliberately deferred and why.
 ## Operational notes
 
 - **Tests gate everything.** No tests → don't start. After every fix → rerun tests.
+- **Verify, never recall.** No API/library/config detail goes in from memory — confirm
+  it against current sources (context7 → web search) in a sub-agent first. Unverified =
+  unknown; resolve or surface it, don't ship it.
 - **Parallelism:** launch independent agents and independent Bash reviews in a single
   message so they run concurrently; batch independent tests.
 - Use `gtimeout` instead of `timeout`; double gemini's timeout to 600 if it hangs.
