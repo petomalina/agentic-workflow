@@ -1,0 +1,41 @@
+---
+title: Chat
+description: The only place to capture and edit. A conversation with an LLM agent that organizes braindumps into structured, queryable memory.
+---
+
+# Chat
+
+The chat is the **heart of the product** and the **only way to put data in or
+change it**. Everything else is a read-only view onto what the chat produced.
+
+## Purpose
+
+- Let the user braindump in natural language across multiple messages.
+- Run an **LLM agent** that understands intent, asks enriching questions, and
+  uses **database tools** to create and update people, events, attendees,
+  labels, and follow-ups.
+- Return **real language** — confirmations and clarifying questions — not form
+  state.
+
+## Key elements
+
+- A message thread (user on the right, agent on the left).
+- A composer that sends on Enter (Shift+Enter for a newline).
+- A persistent reminder that the chat is the only way to capture and edit.
+
+## Behavior
+
+- The agent **confirms** what it captured so the user can correct it.
+- The agent **asks follow-up questions** to enrich rapport data (challenges,
+  learnings) — see Intents.
+- Recall questions ("who did I meet about X?") are answered here too, by
+  querying the store.
+
+## IA risk to watch
+
+Because editing is chat-only, a mis-heard name or wrong attribution can be
+annoying to fix. Mitigation: make agent output in the Dictionary surface and
+Timeline surface **click-to-verify** — a quick correction should feel like
+editing even though it sends a message to the agent behind the scenes.
+
+The flow that exercises this surface is Chat braindump flow.

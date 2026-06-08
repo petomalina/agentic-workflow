@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+
+# SQLite (created at runtime by drizzle migrate/push — migrations live in app/drizzle)
+*.db
+*.db-shm
+*.db-wal
+
+# Local Claude settings
+.claude/settings.local.json
+
+# Safety nets (each app also has its own .gitignore)
+node_modules/
+dist/
+test-results/
+playwright-report/

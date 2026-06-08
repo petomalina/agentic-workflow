@@ -1,0 +1,48 @@
+---
+title: Intents
+description: What the user wants to accomplish, and what the agent does to make it happen.
+---
+
+# Intents
+
+Braindump has two sides to every interaction: the **user's intent** (what they
+are trying to do) and the **agent's intent** (what it must do in response).
+Everything is mediated through the chat — there are no forms, no manual editing.
+
+## User intents
+
+- **Dump a braindump.** "I was at DevConf. Met Ada, we talked about recall."
+  Capture people, what was discussed, when, and who else was there.
+- **Add more, conversationally.** Follow one message with another — "I also
+  talked to the speaker about decidability" — without re-stating context.
+- **Label and organize.** "Tag Ada as a mentor." Ask the agent to categorize
+  people.
+- **Recall.** "Who did I meet about search?" "When did I last see Grace?"
+  "What did we discuss?"
+- **Track commitments.** "Remind me I owe Ada the architecture doc."
+
+## Agent intents
+
+The agent is **LLM-based** and **tool-using**. The user wants real language in,
+real language out — so the agent must understand intent, not match keywords.
+
+1. **Understand.** Parse the braindump for entities: people, the event/meeting,
+   its context (the conference or call), other attendees, and any labels.
+2. **Ask to enrich.** When useful for rapport, ask a clarifying question —
+   *what challenge were they trying to solve?*, *what interesting thing did you
+   learn about them?* — so the record is more than a name.
+3. **Write, via tools.** Use database tools to create/update people, events,
+   attendees, labels, and follow-ups. Editing the store is always the agent's
+   job, never a form.
+4. **Confirm correctness.** Reflect back what it captured ("Logged a coffee chat
+   with Ada at DevConf, tagged mentor") so the user can correct it in chat.
+5. **Search to answer recall.** For recall intents, query the database with
+   tools and answer in natural language.
+
+## Why it matters
+
+The whole point is **rapport**: people build better relationships when they
+remember the details. The agent's job is to lower the cost of remembering to
+near zero — you just talk, it keeps the thread.
+
+Related: User persona, Chat braindump flow, Chat surface.

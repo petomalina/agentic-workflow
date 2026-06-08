@@ -1,0 +1,64 @@
+---
+title: Conversational Braindump (Primary Flow)
+description: The core flow we test — a user returns from a conference and dumps their brain over several messages, and the agent enriches and organizes it.
+---
+
+# Conversational Braindump
+
+This is the **primary flow** and the one our end-to-end tests exercise. It is a
+*conversation*, not a single submission: the user dumps, adds more, and steers
+the agent across several turns.
+
+## Trigger
+
+The user gets back from a conference (or a day of meetings) and opens the app.
+They land on the Chat surface.
+
+## Steps
+
+1. **First dump.** The user types what they remember:
+   *"I was at DevConf. Met Ada Lovelace over coffee — we talked about framing
+   the product around recall, not just capture."*
+2. **Agent organizes + probes.** The agent creates a person (Ada), an event
+   (coffee chat) with its context (DevConf), and replies with a confirmation
+   plus a clarifying question:
+   *"Logged a coffee chat with Ada at DevConf. What challenge was she trying to
+   solve — it helps for next time you talk."*
+3. **User adds more (same session).** Without repeating context:
+   *"She's trying to keep teams aligned without endless meetings. Also I talked
+   to the speaker, Alan Turing, about how agents decide what to store."*
+4. **Agent extends.** It enriches Ada's record with the challenge, and creates a
+   second person/event for Alan — recognizing he was a *speaker* at the same
+   conference.
+5. **User directs labeling.** *"Tag Ada as a mentor."* The agent updates labels.
+6. **Multi-person meeting.** *"Later I was in a meeting with three people from
+   the platform team about migration."* The agent creates one event with
+   multiple attendees.
+7. **Agent asks for rapport detail.** *"Anything interesting you learned about
+   them personally?"* — capturing the kind of detail that builds relationships.
+
+## Outcome
+
+Without filling in a single form, the user now has:
+
+- **People** in the Dictionary surface, each with a description and labels.
+- **Events** (with attendees and context) visible on the Timeline surface.
+- **Commitments** surfaced in Follow ups surface.
+
+## Example transcript
+
+| Turn | Who | Message |
+| --- | --- | --- |
+| 1 | User | "At DevConf. Met Ada over coffee, talked about recall." |
+| 2 | Agent | "Logged it. What challenge was she solving?" |
+| 3 | User | "Aligning teams without endless meetings. Tag her mentor." |
+| 4 | Agent | "Done — added the challenge and the mentor label. Anyone else?" |
+| 5 | User | "Talked to the speaker Alan about decidability." |
+| 6 | Agent | "Added Alan as a speaker you met at DevConf. Want a follow-up?" |
+
+## Notes
+
+- There is **no manual edit path** — corrections happen by telling the agent
+  ("no, her name is Ada with one d"). See the IA risk in Chat surface.
+- Persistence and the agent are out of scope for the current mock; the UI runs
+  on mock data while the schema and chat shell are in place.
