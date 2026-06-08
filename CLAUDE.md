@@ -26,7 +26,10 @@ app/                  # Braindump app (Vite + React + shadcn/ui + Drizzle + Jest
   src/components/      # surfaces: chat-window, people-directory, timeline, follow-ups, person-detail
   src/lib/mock-data.ts # the app runs on MOCK data for now
   src/db/              # Drizzle schema + connection — SCAFFOLDING, not wired to the UI yet
+  src/agent/           # Genkit + Vertex AI agent + LLM-judged eval harness
   drizzle/             # generated migrations (after db:generate)
+conversations/        # agent eval fixtures: one JSON per scenario, each with the
+                      # expected user/agent transcript AND expected final DB state
 ```
 
 ## Commands
@@ -80,11 +83,42 @@ When running **both** dev servers at once, give them different ports
 
 The braindump agent (not yet wired up — UI runs on mock data) is built with:
 
-- **Google Genkit** — agent/flow framework and tool calling.
-- **Gemini 3.5 Flash** — the model.
-- **temperature: `0`** and **thinking budget: `0`** — extraction and recall must
-  be deterministic and fast, not exploratory.
+- **Google Genkit** (`genkit` + `@genkit-ai/google-genai`) — agent/flow framework
+  and tool calling.
+- **Gemini 3.5 Flash via Vertex AI.** Initialize the Vertex plugin (`vertexAI()`)
+  and rely on this machine's **preconfigured GCP project + Application Default
+  Credentials** — no API keys in code, expect it to be set up. Reference the
+  model with `vertexAI.model("gemini-3.5-flash")`.
+- **temperature `0`** and **thinking budget `0`**
+  (`config: { temperature: 0, thinkingConfig: { thinkingBudget: 0 } }`) — keep
+  extraction, recall, and judging deterministic and fast, not exploratory.
 
 Tools the agent uses are the Drizzle/SQLite operations over `src/db/schema.ts`
 (create/update people, events, attendees, labels, relationships, follow-ups;
 query for recall).
+
+### Agent evals
+
+`conversations/*.json` are eval fixtures — each is one scenario (`now` anchor,
+the full expected user/agent `turns`, the expected final `expectedDb`, and
+natural-language `assertions`). They cover edge cases: relative dates, merging a
+person mentioned across turns, corrections/re-attribution, relationships, and
+multi-attendee meetings.
+
+The harness lives in `app/src/agent/`:
+- `config.ts` — model + deterministic settings (Vertex `gemini-3.5-flash`, temp 0, thinking 0).
+- `db-harness.ts` — a fresh in-memory SQLite per run (migrated from `src/db/schema.ts`) plus a `DbState` readback.
+- `tools.ts` — the DB tools the agent calls (find/upsert person, log event, add relationship, add follow-up).
+- `run-conversation.ts` — replays a fixture's user turns through the agent, returning the transcript + DB snapshot.
+- `judge.ts` — the **LLM-as-judge**; the full conversation + expected + actual are always sent to it (the dataset is small, so no trimming).
+- `conversations.test.ts` — validates every fixture's shape on every `npm test`, and (opt-in) runs the judged evals.
+- `judge.test.ts` — validates the judge itself: correct data passes (true positive, no false negative) and wrong data fails (no false positive).
+
+`run-conversation` and `judge` are implemented with Genkit + Vertex AI, so the
+judged evals need the preconfigured Vertex project (ADC; the model is served from
+the `GOOGLE_CLOUD_LOCATION` — `global` here). They are opt-in: run
+`npm run test:evals`, or target one case by id:
+`RUN_AGENT_EVALS=1 npx jest -t "04-person-merge" --forceExit`. (`--forceExit`
+because Genkit's tracing keeps the process open; the agent tests use the `node`
+Jest environment so Genkit's deps resolve to their CommonJS builds.) Fixture-shape
+validation runs on every `npm test`.

@@ -8,6 +8,8 @@
     "erasableSyntaxOnly": false,
     "allowImportingTsExtensions": false,
     "esModuleInterop": true,
+    "allowJs": true,
+    "rootDir": ".",
     "isolatedModules": true,
     "noEmit": false,
     "jsx": "react-jsx",

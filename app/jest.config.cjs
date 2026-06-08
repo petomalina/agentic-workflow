@@ -12,7 +12,9 @@ module.exports = {
     "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
   },
   transform: {
-    "^.+\\.(ts|tsx)$": [
+    // Also transform .js so Genkit's ESM-only deps (see transformIgnorePatterns)
+    // get compiled to CommonJS when the agent evals run.
+    "^.+\\.(ts|tsx|js|mjs|cjs)$": [
       "ts-jest",
       {
         tsconfig: "<rootDir>/tsconfig.test.json",
@@ -20,6 +22,11 @@ module.exports = {
       },
     ],
   },
+  // By default Jest skips node_modules; allow-list the ESM-only packages Genkit
+  // pulls in so they are transformed instead of failing with import-statement errors.
+  transformIgnorePatterns: [
+    "node_modules/(?!(?:\\.pnpm/)?(genkit|@genkit-ai|uuid|dotprompt|jsonpath-plus|node-fetch|fetch-blob|formdata-polyfill|data-uri-to-buffer|@google-cloud|google-auth-library|gaxios|gtoken|google-genai)/)",
+  ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   testMatch: ["**/*.{test,spec}.{ts,tsx}"],
 }
