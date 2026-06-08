@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
+import { SquarePen } from "lucide-react"
 
 import { AppSidebar, type Surface } from "@/components/app-sidebar"
+import { Button } from "@/components/ui/button"
 import { ChatWindow } from "@/components/chat-window"
 import { FollowUps } from "@/components/follow-ups"
 import { PeopleDirectory } from "@/components/people-directory"
@@ -27,6 +29,7 @@ export default function App() {
   const [surface, setSurface] = useState<Surface>("chat")
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
   const [query, setQuery] = useState("")
+  const [chatKey, setChatKey] = useState(0)
 
   const filteredPeople = useMemo(() => filterPeople(mockPeople, query), [query])
   const timeline = useMemo(() => getTimeline(mockPeople), [])
@@ -53,6 +56,13 @@ export default function App() {
     setSelectedPersonId(id)
   }
 
+  function startNewConversation() {
+    setSurface("chat")
+    setSelectedPersonId(null)
+    // Remount ChatWindow with a fresh greeting-only thread.
+    setChatKey((key) => key + 1)
+  }
+
   const showSearch = surface !== "chat"
 
   return (
@@ -72,13 +82,17 @@ export default function App() {
           ) : (
             <span className="text-sm font-medium">Braindump</span>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={startNewConversation}>
+              <SquarePen className="size-4" />
+              New conversation
+            </Button>
             <ThemeToggle />
           </div>
         </header>
 
         <div className="min-h-0 flex-1">
-          {surface === "chat" && <ChatWindow />}
+          {surface === "chat" && <ChatWindow key={chatKey} fresh={chatKey > 0} />}
 
           {surface === "dictionary" &&
             (selectedPerson ? (

@@ -167,6 +167,14 @@ export const mockMessages: ChatMessage[] = [
   },
 ]
 
+/** Greeting shown when the user starts a brand-new conversation. */
+export const freshChatGreeting: ChatMessage = {
+  id: "fresh-greeting",
+  role: "assistant",
+  content: "New conversation — tell me who you met and what you talked about.",
+  timestamp: "2026-06-09T00:00:00.000Z",
+}
+
 // Canned assistant replies that mimic the agent flow: acknowledge, then probe
 // for the kind of detail that builds rapport. Cycled deterministically.
 const CANNED_REPLIES = [

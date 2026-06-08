@@ -2,13 +2,20 @@ import * as React from "react"
 import { Send } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { cannedReply, mockMessages, type ChatMessage } from "@/lib/mock-data"
+import {
+  cannedReply,
+  freshChatGreeting,
+  mockMessages,
+  type ChatMessage,
+} from "@/lib/mock-data"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 
-export function ChatWindow() {
-  const [messages, setMessages] = React.useState<ChatMessage[]>(mockMessages)
+export function ChatWindow({ fresh = false }: { fresh?: boolean }) {
+  const [messages, setMessages] = React.useState<ChatMessage[]>(
+    fresh ? [freshChatGreeting] : mockMessages
+  )
   const [draft, setDraft] = React.useState("")
   const idCounter = React.useRef(0)
   const turnCounter = React.useRef(0)
