@@ -15,6 +15,13 @@
       "when": 1780957267194,
       "tag": "0001_add_relationships",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780961914607,
+      "tag": "0002_curly_makkari",
+      "breakpoints": true
     }
   ]
 }

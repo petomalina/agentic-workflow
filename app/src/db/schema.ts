@@ -69,6 +69,14 @@ export const events = sqliteTable("events", {
   occurredAt: integer("occurred_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
+  /** The user's original phrasing for when it happened ("about two weeks ago"). */
+  occurredAtText: text("occurred_at_text"),
+  /** How precisely the date is known, so recall can stay honest. */
+  occurredAtPrecision: text("occurred_at_precision", {
+    enum: ["exact", "day", "approximate"],
+  })
+    .notNull()
+    .default("day"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -84,6 +92,10 @@ export const eventAttendees = sqliteTable(
     personId: integer("person_id")
       .notNull()
       .references(() => people.id, { onDelete: "cascade" }),
+    /** This attendee's role in the meeting, e.g. "primary contact", "speaker". */
+    role: text("role"),
+    /** What THIS attendee specifically said or did (per-attendee attribution). */
+    note: text("note"),
   },
   (table) => [primaryKey({ columns: [table.eventId, table.personId] })]
 )
@@ -117,6 +129,8 @@ export const followUps = sqliteTable("follow_ups", {
   summary: text("summary").notNull(),
   owner: text("owner", { enum: ["you", "them"] }).notNull(),
   dueAt: integer("due_at", { mode: "timestamp" }),
+  /** The user's original phrasing for the due date ("end of next week"). */
+  dueText: text("due_text"),
   done: integer("done", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -125,7 +139,10 @@ export const followUps = sqliteTable("follow_ups", {
 
 /**
  * Person-to-person relationships ("they work together", "she introduced us").
- * Symmetric in meaning; stored once as an ordered (A, B) pair with a type.
+ * Stored and read left-to-right: `personA <type> personB`. Directional types
+ * (e.g. "reports to", "manager") respect that order — "Maya reports to Ravi" is
+ * (personA = Maya, personB = Ravi). Symmetric types ("coworker", "went to school
+ * together") are stored once in either order.
  */
 export const personRelationships = sqliteTable("person_relationships", {
   id: integer("id").primaryKey({ autoIncrement: true }),

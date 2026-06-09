@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, MapPin, Users, Link2 } from "lucide-react"
 
 import { formatDate } from "@/lib/format"
-import { initials, relationsForPerson, type Person } from "@/lib/mock-data"
+import { initials, type Person, type RelatedPerson } from "@/lib/mock-data"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,16 +10,18 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface PersonDetailProps {
   person: Person
+  relations: RelatedPerson[]
   onBack: () => void
   onSelectPerson: (id: string) => void
 }
 
 export function PersonDetail({
   person,
+  relations,
   onBack,
   onSelectPerson,
 }: PersonDetailProps) {
-  const relatedPeople = relationsForPerson(person.id)
+  const relatedPeople = relations
 
   return (
     <ScrollArea className="h-full">

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "lib": ["ES2023"],
+    "jsx": "preserve",
+    "noEmit": true,
+    "verbatimModuleSyntax": false,
+    "erasableSyntaxOnly": false,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": ["server", "src/db", "src/agent", "src/lib/mock-data.ts"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"]
+}

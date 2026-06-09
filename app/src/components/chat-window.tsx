@@ -2,54 +2,84 @@ import * as React from "react"
 import { Send } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import {
-  cannedReply,
-  freshChatGreeting,
-  mockMessages,
-  type ChatMessage,
-} from "@/lib/mock-data"
+import { freshChatGreeting, type ChatMessage } from "@/lib/mock-data"
+import { fetchMessages, sendChat } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 
-export function ChatWindow({ fresh = false }: { fresh?: boolean }) {
-  const [messages, setMessages] = React.useState<ChatMessage[]>(
-    fresh ? [freshChatGreeting] : mockMessages
-  )
+interface ChatWindowProps {
+  fresh?: boolean
+  /** Called after a successful turn so the parent can refetch the views. */
+  onTurn?: () => void
+}
+
+export function ChatWindow({ fresh = false, onTurn }: ChatWindowProps) {
+  const [messages, setMessages] = React.useState<ChatMessage[]>([
+    freshChatGreeting,
+  ])
   const [draft, setDraft] = React.useState("")
+  const [pending, setPending] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
   const idCounter = React.useRef(0)
-  const turnCounter = React.useRef(0)
+  const sendStarted = React.useRef(false)
   const endRef = React.useRef<HTMLDivElement>(null)
 
   const nextId = (prefix: string) => `${prefix}-${(idCounter.current += 1)}`
+
+  // Load the existing thread. A "New conversation" (fresh) view starts from the
+  // greeting and leaves the backend thread untouched.
+  React.useEffect(() => {
+    if (fresh) {
+      setMessages([freshChatGreeting])
+      return
+    }
+    let cancelled = false
+    fetchMessages()
+      .then((thread) => {
+        // Don't clobber an optimistic message the user already sent while this
+        // initial load was still in flight.
+        if (cancelled || sendStarted.current) return
+        setMessages(thread.length > 0 ? thread : [freshChatGreeting])
+      })
+      .catch(() => {
+        if (!cancelled && !sendStarted.current) setMessages([freshChatGreeting])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [fresh])
 
   React.useEffect(() => {
     // scrollIntoView isn't implemented in jsdom; guard so tests don't throw.
     endRef.current?.scrollIntoView?.({ behavior: "smooth" })
   }, [messages])
 
-  function send() {
+  async function send() {
     const content = draft.trim()
-    if (!content) return
+    if (!content || pending) return
+    sendStarted.current = true
 
-    const now = new Date().toISOString()
     const userMessage: ChatMessage = {
       id: nextId("local-user"),
       role: "user",
       content,
-      timestamp: now,
+      timestamp: new Date().toISOString(),
     }
-    // Mocked assistant turn — cycles through agent-style acknowledgements and
-    // clarifying questions. Replace with a real LLM backend later.
-    const assistantMessage: ChatMessage = {
-      id: nextId("local-assistant"),
-      role: "assistant",
-      content: cannedReply(turnCounter.current++),
-      timestamp: now,
-    }
-
-    setMessages((prev) => [...prev, userMessage, assistantMessage])
+    setMessages((prev) => [...prev, userMessage])
     setDraft("")
+    setPending(true)
+    setError(null)
+
+    try {
+      const response = await sendChat(content)
+      setMessages((prev) => [...prev, response.reply])
+      onTurn?.()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong.")
+    } finally {
+      setPending(false)
+    }
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -71,6 +101,21 @@ export function ChatWindow({ fresh = false }: { fresh?: boolean }) {
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
+          {pending && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl bg-muted px-4 py-2 text-sm text-muted-foreground">
+                <span className="sr-only">Assistant: </span>
+                Thinking…
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                {error}
+              </div>
+            </div>
+          )}
           <div ref={endRef} />
         </div>
       </ScrollArea>
@@ -85,10 +130,11 @@ export function ChatWindow({ fresh = false }: { fresh?: boolean }) {
             aria-label="Message"
             className="min-h-[44px] resize-none"
             rows={1}
+            disabled={pending}
           />
           <Button
             onClick={send}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || pending}
             size="icon"
             aria-label="Send message"
           >

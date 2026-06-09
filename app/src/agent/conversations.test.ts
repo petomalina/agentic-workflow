@@ -50,8 +50,12 @@ describe("conversation fixtures", () => {
 
 // The eval, one assertion per fixture: drop the DB, run the conversation through
 // the agent, then dump the conversation + resulting DB + assertions to the judge.
-// RED until the braindump agent (run-conversation.ts) is implemented.
-describe.each(fixtures)("$id — $title", (fixture: ConversationFixture) => {
+// Opt-in (it makes live Gemini/Vertex round-trips): `npm run test:evals`, or
+// RUN_AGENT_EVALS=1. Plain `npm test` runs only the fixture-shape guard above.
+const runEvals = process.env.RUN_AGENT_EVALS === "1"
+const evalSuite = runEvals ? describe : describe.skip
+
+evalSuite.each(fixtures)("$id — $title", (fixture: ConversationFixture) => {
   it("produces the expected database from the conversation", async () => {
     const run = await runConversation(fixture)
     const verdict = await judge(fixture, run)
