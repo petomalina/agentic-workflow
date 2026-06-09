@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { SquarePen } from "lucide-react"
 
 import { AppSidebar, type Surface } from "@/components/app-sidebar"
@@ -17,95 +17,38 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import {
-  fetchFollowUps,
-  fetchPeople,
-  fetchPerson,
-  fetchTimeline,
-  type PersonDetail as PersonDetailData,
-} from "@/lib/api"
-import {
   filterFollowUps,
   filterPeople,
   filterTimeline,
-  type FollowUp,
-  type Person,
-  type RelatedPerson,
-  type TimelineEntry,
+  getTimeline,
+  mockFollowUps,
+  mockPeople,
 } from "@/lib/mock-data"
 
 export default function App() {
   const [surface, setSurface] = useState<Surface>("chat")
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
   const [query, setQuery] = useState("")
-  // `chatKey` forces a ChatWindow remount; `chatFresh` is a one-shot flag for the
-  // "New conversation" view (greeting only). Any later navigation back to Chat
-  // clears it so the persisted thread loads again.
   const [chatKey, setChatKey] = useState(0)
-  const [chatFresh, setChatFresh] = useState(false)
 
-  const [people, setPeople] = useState<Person[]>([])
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([])
-  const [followUps, setFollowUps] = useState<FollowUp[]>([])
-  const [detail, setDetail] = useState<PersonDetailData | null>(null)
-
-  // Reload every view. Called on mount and after each chat turn (writes only
-  // happen through chat, so this is the single refresh path).
-  const refresh = useCallback(async () => {
-    const [nextPeople, nextTimeline, nextFollowUps] = await Promise.all([
-      fetchPeople(),
-      fetchTimeline(),
-      fetchFollowUps(),
-    ])
-    setPeople(nextPeople)
-    setTimeline(nextTimeline)
-    setFollowUps(nextFollowUps)
-  }, [])
-
-  useEffect(() => {
-    refresh().catch((err) => console.error("Failed to load data", err))
-  }, [refresh])
-
-  // Pull relationships for the open person from the detail endpoint.
-  useEffect(() => {
-    if (!selectedPersonId) {
-      setDetail(null)
-      return
-    }
-    let cancelled = false
-    fetchPerson(selectedPersonId)
-      .then((result) => {
-        if (!cancelled) setDetail(result)
-      })
-      .catch((err) => console.error("Failed to load person", err))
-    return () => {
-      cancelled = true
-    }
-  }, [selectedPersonId, people])
-
-  const filteredPeople = useMemo(() => filterPeople(people, query), [people, query])
+  const filteredPeople = useMemo(() => filterPeople(mockPeople, query), [query])
+  const timeline = useMemo(() => getTimeline(mockPeople), [])
   const filteredTimeline = useMemo(
     () => filterTimeline(timeline, query),
     [timeline, query]
   )
   const filteredFollowUps = useMemo(
-    () => filterFollowUps(followUps, query),
-    [followUps, query]
+    () => filterFollowUps(mockFollowUps, query),
+    [query]
   )
 
   const selectedPerson =
-    detail?.person.id === selectedPersonId
-      ? detail.person
-      : people.find((person) => person.id === selectedPersonId) ?? null
-  const relations: RelatedPerson[] =
-    detail?.person.id === selectedPersonId ? detail.relations : []
-  const openFollowUpCount = followUps.filter((item) => !item.done).length
+    mockPeople.find((person) => person.id === selectedPersonId) ?? null
+  const openFollowUpCount = mockFollowUps.filter((item) => !item.done).length
 
   function navigate(next: Surface) {
     setSurface(next)
     setSelectedPersonId(null)
-    // Navigating to Chat via the sidebar shows the live thread, not the
-    // greeting-only fresh view.
-    if (next === "chat") setChatFresh(false)
   }
 
   function openPerson(id: string) {
@@ -116,9 +59,7 @@ export default function App() {
   function startNewConversation() {
     setSurface("chat")
     setSelectedPersonId(null)
-    // Remount ChatWindow with a fresh greeting-only view (the backend thread is
-    // unchanged — clearing the transcript is cosmetic).
-    setChatFresh(true)
+    // Remount ChatWindow with a fresh greeting-only thread.
     setChatKey((key) => key + 1)
   }
 
@@ -129,7 +70,7 @@ export default function App() {
       <AppSidebar
         surface={surface}
         onNavigate={navigate}
-        peopleCount={people.length}
+        peopleCount={mockPeople.length}
         openFollowUpCount={openFollowUpCount}
       />
       <SidebarInset className="h-svh overflow-hidden">
@@ -151,15 +92,12 @@ export default function App() {
         </header>
 
         <div className="min-h-0 flex-1">
-          {surface === "chat" && (
-            <ChatWindow key={chatKey} fresh={chatFresh} onTurn={refresh} />
-          )}
+          {surface === "chat" && <ChatWindow key={chatKey} fresh={chatKey > 0} />}
 
           {surface === "dictionary" &&
             (selectedPerson ? (
               <PersonDetail
                 person={selectedPerson}
-                relations={relations}
                 onBack={() => setSelectedPersonId(null)}
                 onSelectPerson={setSelectedPersonId}
               />
